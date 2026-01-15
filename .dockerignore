@@ -1,0 +1,58 @@
+# Docker ignore file for Office Tools
+# Reduces build context and improves build speed
+
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!target/*.jar
+!target/lib/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.project
+.classpath
+.settings/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Documentation
+README.md
+CLAUDE.md
+*.md
+docs/
+
+# Logs
+*.log
+logs/
+
+# Test
+test-results/
+*.test
+
+# Build artifacts
+build/
+out/
+
+# Temporary files
+*.tmp
+*.bak
+*.cache

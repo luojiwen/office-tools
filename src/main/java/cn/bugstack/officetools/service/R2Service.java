@@ -3,6 +3,7 @@ package cn.bugstack.officetools.service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Cloudflare R2 文件存储服务接口
@@ -40,6 +41,24 @@ public interface R2Service {
      * @return 文件的访问 URL
      */
     String uploadBytes(byte[] content, String fileName, String contentType);
+
+    /**
+     * 从 R2 下载文件
+     *
+     * @param fileName 文件名
+     * @return 文件内容
+     * @throws IOException 下载失败时抛出异常
+     */
+    byte[] downloadFile(String fileName) throws IOException;
+
+    /**
+     * 获取文件的输入流（用于大文件下载）
+     *
+     * @param fileName 文件名
+     * @return 输入流
+     * @throws IOException 下载失败时抛出异常
+     */
+    InputStream downloadFileStream(String fileName) throws IOException;
 
     /**
      * 删除 R2 中的文件

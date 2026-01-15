@@ -1,0 +1,41 @@
+# Render.com deployment configuration
+# https://render.com/docs/yaml-spec
+
+services:
+  # Web Service configuration
+  - type: web
+    name: office-tools
+    env: docker
+    region: singapore
+    plan: free
+    # Docker context path (root of the repository)
+    dockerContext: .
+    # Dockerfile path relative to dockerContext
+    dockerfilePath: ./Dockerfile
+
+    # Environment variables (configure these in Render dashboard)
+    # These values are placeholders - set actual values in Render dashboard
+    envVars:
+      - key: JAVA_OPTS
+        value: -Xmx512m -Xms256m -XX:+UseG1GC -XX:+UseStringDeduplication
+
+      # Cloudflare R2 Configuration
+      - key: R2_ENDPOINT
+        sync: false # Set in dashboard
+      - key: R2_BUCKET_NAME
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_PUBLIC_DOMAIN
+        value: ""
+
+    # Health check
+    healthCheckPath: /actuator/health
+
+    # Auto-deploy on git push
+    autoDeploy: true
+
+    # Number of instances
+    numInstances: 1

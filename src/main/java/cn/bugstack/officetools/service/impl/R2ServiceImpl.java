@@ -1,14 +1,18 @@
 package cn.bugstack.officetools.service.impl;
 
 import cn.bugstack.officetools.service.R2Service;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.UUID;
 
 /**
@@ -17,6 +21,7 @@ import java.util.UUID;
  * @author bugstack
  * @date 2026-01-15
  */
+@Slf4j
 @Service
 public class R2ServiceImpl implements R2Service {
 
@@ -54,8 +59,7 @@ public class R2ServiceImpl implements R2Service {
                 .build();
 
         // 执行上传
-        s3Client.putObject(putObjectRequest,
-                software.amazon.awssdk.core.sync.RequestBody.fromBytes(file.getBytes()));
+        s3Client.putObject(putObjectRequest, RequestBody.fromBytes(file.getBytes()));
 
         // 返回访问 URL
         return buildFileUrl(fileName);
@@ -70,10 +74,47 @@ public class R2ServiceImpl implements R2Service {
                 .contentLength((long) content.length)
                 .build();
 
-        s3Client.putObject(putObjectRequest,
-                software.amazon.awssdk.core.sync.RequestBody.fromBytes(content));
+        s3Client.putObject(putObjectRequest, RequestBody.fromBytes(content));
 
         return buildFileUrl(fileName);
+    }
+
+    @Override
+    public byte[] downloadFile(String fileName) throws IOException {
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(fileName)
+                .build();
+
+        try (InputStream is = s3Client.getObject(getObjectRequest);
+             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+
+            byte[] buffer = new byte[8192];
+            int len;
+            while ((len = is.read(buffer)) > 0) {
+                baos.write(buffer, 0, len);
+            }
+
+            return baos.toByteArray();
+        } catch (Exception e) {
+            log.error("下载文件失败: {}", e.getMessage(), e);
+            throw new IOException("下载文件失败: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public InputStream downloadFileStream(String fileName) throws IOException {
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(fileName)
+                .build();
+
+        try {
+            return s3Client.getObject(getObjectRequest);
+        } catch (Exception e) {
+            log.error("下载文件流失败: {}", e.getMessage(), e);
+            throw new IOException("下载文件流失败: " + e.getMessage(), e);
+        }
     }
 
     @Override
