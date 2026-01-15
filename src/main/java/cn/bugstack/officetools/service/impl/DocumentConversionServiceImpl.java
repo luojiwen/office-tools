@@ -57,21 +57,44 @@ public class DocumentConversionServiceImpl implements DocumentConversionService 
 
     @Override
     public ConversionResult convertSingleSync(MultipartFile file, boolean returnFile) throws Exception {
+        long totalStart = System.currentTimeMillis();
+
         // 参数验证
+        long validateStart = System.currentTimeMillis();
         validateFile(file);
+        log.info("【性能监控】文件验证耗时: {}ms, 文件名: {}, 文件大小: {} bytes",
+                System.currentTimeMillis() - validateStart, file.getOriginalFilename(), file.getSize());
 
         // 使用 AsposeWordService 转换为 PDF
+        long convertStart = System.currentTimeMillis();
         ByteArrayOutputStream pdfStream = (ByteArrayOutputStream) asposeWordService.convertDocument(
                 file.getInputStream(),
                 file.getOriginalFilename(),
                 "pdf"
         );
+        long convertTime = System.currentTimeMillis() - convertStart;
+        log.info("【性能监控】Aspose.Words 转换耗时: {}ms, 输入文件: {}, 输出大小: {} bytes",
+                convertTime, file.getOriginalFilename(), pdfStream.size());
 
         // 生成 PDF 文件名（带时间戳）
+        long fileNameStart = System.currentTimeMillis();
         String pdfFileName = fileNameGenerator.generatePdfFileName(file.getOriginalFilename());
+        log.info("【性能监控】生成文件名耗时: {}ms, 文件名: {}",
+                System.currentTimeMillis() - fileNameStart, pdfFileName);
 
         // 上传到 R2
+        long uploadStart = System.currentTimeMillis();
         String pdfUrl = r2Service.uploadBytes(pdfStream.toByteArray(), pdfFileName, "application/pdf");
+        log.info("【性能监控】R2 上传耗时: {}ms, 文件名: {}, URL: {}",
+                System.currentTimeMillis() - uploadStart, pdfFileName, pdfUrl);
+
+        // 如果需要直接返回文件流，保存到临时存储
+        long storageStart = System.currentTimeMillis();
+        if (returnFile) {
+            tempFileStorage.store(pdfFileName, pdfStream.toByteArray());
+        }
+        log.info("【性能监控】临时存储耗时: {}ms",
+                System.currentTimeMillis() - storageStart);
 
         // 构建结果
         ConversionResult result = ConversionResult.builder()
@@ -83,12 +106,10 @@ public class DocumentConversionServiceImpl implements DocumentConversionService 
                 .contentType("application/pdf")
                 .build();
 
-        // 如果需要直接返回文件流，保存到临时存储
-        if (returnFile) {
-            tempFileStorage.store(pdfFileName, pdfStream.toByteArray());
-        }
+        long totalTime = System.currentTimeMillis() - totalStart;
+        log.info("【性能监控】单文件转换总耗时: {}ms, 文件: {}, 大小: {} -> {} bytes",
+                totalTime, file.getOriginalFilename(), file.getSize(), pdfStream.size());
 
-        log.info("单文件转换成功: {} -> {}", file.getOriginalFilename(), pdfFileName);
         return result;
     }
 

@@ -67,14 +67,29 @@ public class R2ServiceImpl implements R2Service {
 
     @Override
     public String uploadBytes(byte[] content, String fileName, String contentType) {
+        long totalStart = System.currentTimeMillis();
+
+        // 构建上传请求
+        long buildStart = System.currentTimeMillis();
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(bucketName)
                 .key(fileName)
                 .contentType(contentType)
                 .contentLength((long) content.length)
                 .build();
+        log.info("【性能监控-R2】构建请求耗时: {}ms",
+                System.currentTimeMillis() - buildStart);
 
+        // 执行上传
+        long uploadStart = System.currentTimeMillis();
         s3Client.putObject(putObjectRequest, RequestBody.fromBytes(content));
+        long uploadTime = System.currentTimeMillis() - uploadStart;
+
+        long totalTime = System.currentTimeMillis() - totalStart;
+        // 计算上传速度 (KB/s)
+        double speedKB = (content.length / 1024.0) / (uploadTime / 1000.0);
+        log.info("【性能监控-R2】上传耗时: {}ms, 文件: {}, 大小: {} bytes, 速度: {:.2f} KB/s, 总耗时: {}ms",
+                uploadTime, fileName, content.length, speedKB, totalTime);
 
         return buildFileUrl(fileName);
     }

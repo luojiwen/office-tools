@@ -2,6 +2,7 @@ package cn.bugstack.officetools.service.impl;
 
 import cn.bugstack.officetools.service.AsposeWordService;
 import com.aspose.words.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -16,6 +17,7 @@ import java.util.Map;
  * @author bugstack
  * @date 2026-01-13
  */
+@Slf4j
 @Service
 public class AsposeWordServiceImpl implements AsposeWordService {
 
@@ -27,8 +29,13 @@ public class AsposeWordServiceImpl implements AsposeWordService {
 
     @Override
     public ByteArrayOutputStream convertDocument(InputStream inputStream, String originalFilename, String targetFormat) throws Exception {
+        long totalStart = System.currentTimeMillis();
+
         // 加载文档
+        long loadStart = System.currentTimeMillis();
         Document doc = new Document(inputStream);
+        log.info("【性能监控-Aspose】文档加载耗时: {}ms, 文件名: {}, 页数: {}",
+                System.currentTimeMillis() - loadStart, originalFilename, doc.getPageCount());
 
         // 确定保存格式
         int saveFormat;
@@ -60,7 +67,13 @@ public class AsposeWordServiceImpl implements AsposeWordService {
 
         // 保存到输出流
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        long saveStart = System.currentTimeMillis();
         doc.save(outputStream, saveFormat);
+        long saveTime = System.currentTimeMillis() - saveStart;
+
+        long totalTime = System.currentTimeMillis() - totalStart;
+        log.info("【性能监控-Aspose】文档保存耗时: {}ms, 目标格式: {}, 输出大小: {} bytes, 总耗时: {}ms",
+                saveTime, targetFormat, outputStream.size(), totalTime);
 
         return outputStream;
     }
