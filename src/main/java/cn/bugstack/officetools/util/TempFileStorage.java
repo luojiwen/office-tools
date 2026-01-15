@@ -1,5 +1,6 @@
 package cn.bugstack.officetools.util;
 
+import jakarta.annotation.PostConstruct;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +37,7 @@ public class TempFileStorage {
     /**
      * 初始化后设置内存限制
      */
-    @javax.annotation.PostConstruct
+    @PostConstruct
     public void init() {
         maxMemoryBytes = maxMemoryMb * 1024 * 1024;
         log.info("临时文件存储初始化 - 最大内存: {}MB, 最大文件数: {}", maxMemoryMb, maxFileCount);
