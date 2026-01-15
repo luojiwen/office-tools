@@ -31,11 +31,24 @@ public class AsposeWordServiceImpl implements AsposeWordService {
     public ByteArrayOutputStream convertDocument(InputStream inputStream, String originalFilename, String targetFormat) throws Exception {
         long totalStart = System.currentTimeMillis();
 
-        // 加载文档
+        // 加载文档 - 使用优化选项减少内存占用
         long loadStart = System.currentTimeMillis();
-        Document doc = new Document(inputStream);
-        log.info("【性能监控-Aspose】文档加载耗时: {}ms, 文件名: {}, 页数: {}",
-                System.currentTimeMillis() - loadStart, originalFilename, doc.getPageCount());
+
+        // 创建加载选项以优化内存使用
+        LoadOptions loadOptions = new LoadOptions();
+        loadOptions.setLoadFormat(LoadFormat.DOCX);
+
+        // 配置字体设置，避免加载所有系统字体（节省内存）
+        FontSettings fontSettings = new FontSettings();
+        // 只设置必要的字体文件夹
+        fontSettings.setFontsFolder("/usr/share/fonts/noto", false);
+        loadOptions.setFontSettings(fontSettings);
+
+        Document doc = new Document(inputStream, loadOptions);
+
+        long loadTime = System.currentTimeMillis() - loadStart;
+        log.info("【性能监控-Aspose】文档加载耗时: {}ms, 文件名: {}, 页数: {}, 内存优化: 开启",
+                loadTime, originalFilename, doc.getPageCount());
 
         // 确定保存格式
         int saveFormat;

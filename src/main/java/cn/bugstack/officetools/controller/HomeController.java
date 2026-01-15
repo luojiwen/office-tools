@@ -65,4 +65,43 @@ public class HomeController {
 
         return new ApiResponse<>(true, "服务正常", status);
     }
+
+    /**
+     * 内存监控接口
+     */
+    @GetMapping("/memory")
+    public ApiResponse<Map<String, Object>> memory() {
+        Runtime runtime = Runtime.getRuntime();
+
+        Map<String, Object> memoryInfo = new HashMap<>();
+
+        // JVM 内存信息
+        long maxMemory = runtime.maxMemory();
+        long totalMemory = runtime.totalMemory();
+        long freeMemory = runtime.freeMemory();
+        long usedMemory = totalMemory - freeMemory;
+
+        memoryInfo.put("jvmMaxMemory", maxMemory / 1024 / 1024 + " MB");
+        memoryInfo.put("jvmTotalMemory", totalMemory / 1024 / 1024 + " MB");
+        memoryInfo.put("jvmFreeMemory", freeMemory / 1024 / 1024 + " MB");
+        memoryInfo.put("jvmUsedMemory", usedMemory / 1024 / 1024 + " MB");
+
+        // 内存使用百分比
+        double usagePercent = (usedMemory * 100.0) / maxMemory;
+        memoryInfo.put("usagePercent", String.format("%.2f%%", usagePercent));
+
+        // 系统内存信息
+        memoryInfo.put("availableProcessors", runtime.availableProcessors());
+
+        // 内存使用警告
+        if (usagePercent > 80) {
+            memoryInfo.put("warning", "内存使用率过高！建议升级服务或优化配置");
+        } else if (usagePercent > 60) {
+            memoryInfo.put("warning", "内存使用率较高，请注意监控");
+        } else {
+            memoryInfo.put("warning", "内存使用正常");
+        }
+
+        return new ApiResponse<>(true, "内存信息", memoryInfo);
+    }
 }

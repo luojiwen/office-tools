@@ -68,10 +68,21 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8081/actuator/health || exit 1
 
 # 设置生产环境 JVM 参数
-# JAVA_HOME 由 eclipse-temurin 镜像自动设置
-ENV JAVA_OPTS="-Xmx512m -Xms256m -XX:+UseG1GC -XX:+UseStringDeduplication \
+# 针对 Render 免费版 512MB 内存限制优化
+# -Xmx300m: 最大堆内存 300MB（留出空间给元空间、JVM 自身、操作系统）
+# -Xms128m: 初始堆内存 128MB（动态增长，节省内存）
+# -XX:MaxMetaspaceSize=64m: 限制元空间大小
+# -XX:+UseG1GC: 使用 G1 垃圾收集器（低延迟）
+# -XX:+UseStringDeduplication: 字符串去重，减少内存占用
+# -XX:MaxGCPauseMillis=200: 设置最大 GC 暂停时间
+# -XX:InitiatingHeapOccupancyPercent=35: 提前触发 GC，避免内存峰值
+# -Djava.awt.headless=true: 无头模式（服务器无 GUI）
+ENV JAVA_OPTS="-Xmx300m -Xms128m -XX:MaxMetaspaceSize=64m \
+    -XX:+UseG1GC -XX:+UseStringDeduplication \
+    -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=35 \
     -Djava.awt.headless=true \
-    -Dfile.encoding=UTF-8"
+    -Dfile.encoding=UTF-8 \
+    -Dlogging.file.name=/app/logs/application.log"
 
 # 运行应用
 ENTRYPOINT ["dumb-init", "--"]
