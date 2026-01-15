@@ -3,6 +3,8 @@ package cn.bugstack.officetools.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
@@ -14,9 +16,6 @@ import java.util.Arrays;
  */
 @Configuration
 public class CorsConfig {
-
-    @Value("${app.cors.allowed-origins}")
-    private String[] allowedOrigins;
 
     @Value("${app.cors.allowed-methods:GET,POST,PUT,DELETE,OPTIONS}")
     private String[] allowedMethods;
@@ -30,23 +29,34 @@ public class CorsConfig {
     @Value("${app.cors.max-age:3600}")
     private long maxAge;
 
+    @Value("${app.cors.allow-all-origins:false}")
+    private boolean allowAllOrigins;
+
+    @Value("${app.cors.allowed-origins:}")
+    private String[] allowedOrigins;
+
+    /**
+     * CORS 配置 - 通过配置文件控制
+     */
     @Bean
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // 允许的域名
-        config.setAllowedOrigins(Arrays.asList(allowedOrigins));
+        if (allowAllOrigins) {
+            // 允许所有域名（开发环境）
+            config.addAllowedOriginPattern("*");
+            config.setAllowCredentials(false);  // 允许所有源时必须设为 false
+        } else {
+            // 只允许配置的域名（生产环境）
+            if (allowedOrigins == null || allowedOrigins.length == 0) {
+                throw new IllegalStateException("CORS 配置错误：allowAllOrigins=false 时必须配置 allowedOrigins");
+            }
+            config.setAllowedOrigins(Arrays.asList(allowedOrigins));
+            config.setAllowCredentials(allowCredentials);
+        }
 
-        // 允许的 HTTP 方法
         config.setAllowedMethods(Arrays.asList(allowedMethods));
-
-        // 允许的请求头
         config.addAllowedHeader(allowedHeaders);
-
-        // 是否允许发送 Cookie
-        config.setAllowCredentials(allowCredentials);
-
-        // 预检请求的有效期（秒）
         config.setMaxAge(maxAge);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
