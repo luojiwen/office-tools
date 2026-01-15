@@ -68,7 +68,29 @@ public class AsposeWordServiceImpl implements AsposeWordService {
         // 保存到输出流
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         long saveStart = System.currentTimeMillis();
-        doc.save(outputStream, saveFormat);
+
+        // 对于 PDF 格式，使用特殊的保存选项以保留原有格式
+        if (saveFormat == SaveFormat.PDF) {
+            PdfSaveOptions pdfOptions = new PdfSaveOptions();
+
+            // 字体嵌入设置 - 嵌入所有字体以保留原有字体样式
+            pdfOptions.setFontEmbeddingMode(PdfFontEmbeddingMode.EMBED_ALL);
+
+            // 嵌入完整字体（包括未使用的字形）以最大程度保留字体
+            pdfOptions.setEmbedFullFonts(true);
+
+            // 保留文档表单字段
+            pdfOptions.setPreserveFormFields(true);
+
+            // 保存时使用这些选项
+            doc.save(outputStream, pdfOptions);
+
+            log.info("【性能监控-Aspose】PDF 保存选项已应用 - 字体嵌入: EMBED_ALL, 完整字体: true");
+        } else {
+            // 其他格式直接保存
+            doc.save(outputStream, saveFormat);
+        }
+
         long saveTime = System.currentTimeMillis() - saveStart;
 
         long totalTime = System.currentTimeMillis() - totalStart;
