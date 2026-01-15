@@ -32,8 +32,18 @@ RUN ./mvnw clean package -DskipTests -B
 # 阶段 2: 运行阶段
 FROM eclipse-temurin:17-jre-alpine
 
-# 安装 dumb-init 用于正确的信号处理
-RUN apk add --no-cache dumb-init curl
+# 安装必要的包和中文字体
+# - fontconfig: 字体配置工具
+# - font-noto-cjk: Google Noto CJK 字体（支持中文、日文、韩文）
+# - dumb-init: 正确的信号处理
+# - curl: 健康检查
+RUN apk add --no-cache \
+    fontconfig \
+    font-noto-cjk \
+    dumb-init \
+    curl && \
+    # 更新字体缓存
+    fc-cache -fv
 
 # 创建应用用户和组
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
@@ -58,7 +68,10 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8081/actuator/health || exit 1
 
 # 设置生产环境 JVM 参数
-ENV JAVA_OPTS="-Xmx512m -Xms256m -XX:+UseG1GC -XX:+UseStringDeduplication"
+# JAVA_HOME 由 eclipse-temurin 镜像自动设置
+ENV JAVA_OPTS="-Xmx512m -Xms256m -XX:+UseG1GC -XX:+UseStringDeduplication \
+    -Djava.awt.headless=true \
+    -Dfile.encoding=UTF-8"
 
 # 运行应用
 ENTRYPOINT ["dumb-init", "--"]
