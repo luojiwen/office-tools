@@ -153,7 +153,7 @@ public class AsposeWordServiceImpl implements AsposeWordService {
         options.setFindWholeWordsOnly(false);
 
         // 执行替换
-        doc.replace(oldText, newText, options);
+        doc.getRange().replace(oldText, newText, options);
 
         // 保存修改后的文档
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();

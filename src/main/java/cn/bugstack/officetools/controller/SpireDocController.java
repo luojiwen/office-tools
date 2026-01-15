@@ -2,6 +2,7 @@ package cn.bugstack.officetools.controller;
 
 import cn.bugstack.officetools.domain.dto.ApiResponse;
 import cn.bugstack.officetools.service.SpireDocService;
+import cn.bugstack.officetools.util.HttpHeaderUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -9,6 +10,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
 /**
@@ -59,10 +62,13 @@ public class SpireDocController {
                     targetFormat
             );
 
-            String outputFilename = originalFilename.substring(0, originalFilename.lastIndexOf('.')) + "." + targetFormat;
+            // 生成带时间戳的输出文件名：原文件名_yyyy-MM-dd-HH-mm-ss.扩展名
+            String baseName = originalFilename.substring(0, originalFilename.lastIndexOf('.'));
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss"));
+            String outputFilename = baseName + "_" + timestamp + "." + targetFormat;
 
             return ResponseEntity.ok()
-                    .header("Content-Disposition", "attachment; filename=\"" + outputFilename + "\"")
+                    .header("Content-Disposition", HttpHeaderUtil.createContentDispositionValue(outputFilename))
                     .body(outputStream.toByteArray());
 
         } catch (Exception e) {
@@ -154,7 +160,7 @@ public class SpireDocController {
             );
 
             return ResponseEntity.ok()
-                    .header("Content-Disposition", "attachment; filename=\"watermarked_document.docx\"")
+                    .header("Content-Disposition", HttpHeaderUtil.createContentDispositionValue("watermarked_document.docx"))
                     .body(outputStream.toByteArray());
 
         } catch (Exception e) {
@@ -186,7 +192,7 @@ public class SpireDocController {
             );
 
             return ResponseEntity.ok()
-                    .header("Content-Disposition", "attachment; filename=\"protected_document.docx\"")
+                    .header("Content-Disposition", HttpHeaderUtil.createContentDispositionValue("protected_document.docx"))
                     .body(outputStream.toByteArray());
 
         } catch (Exception e) {
@@ -215,7 +221,7 @@ public class SpireDocController {
             );
 
             return ResponseEntity.ok()
-                    .header("Content-Disposition", "attachment; filename=\"unprotected_document.docx\"")
+                    .header("Content-Disposition", HttpHeaderUtil.createContentDispositionValue("unprotected_document.docx"))
                     .body(outputStream.toByteArray());
 
         } catch (Exception e) {
