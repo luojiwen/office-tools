@@ -7,7 +7,7 @@ FROM maven:3.9.12-eclipse-temurin-17 AS builder
 # 设置工作目录
 WORKDIR /app
 
-# 先复制 Maven wrapper 和 pom.xml (为了更好的缓存效果)
+# 先复制 Maven wrapper 和 pom.xml
 COPY mvnw .
 COPY .mvn .mvn
 COPY pom.xml .
@@ -15,8 +15,12 @@ COPY pom.xml .
 # 设置 Maven wrapper 可执行权限
 RUN chmod +x mvnw
 
-# 下载依赖 (当 pom.xml 不变时会使用缓存)
-RUN ./mvnw dependency:go-offline -B
+# 复制 system-scoped 依赖 JAR 文件
+# 必须在 dependency:go-offline 之前复制，否则 Maven 无法解析 system-scoped 依赖
+COPY src/main/resources/lib ./src/main/resources/lib
+
+# 下载其他依赖 (system-scoped 依赖已经在本地了)
+RUN ./mvnw dependency:go-offline -B || true
 
 # 复制源代码
 COPY src ./src
