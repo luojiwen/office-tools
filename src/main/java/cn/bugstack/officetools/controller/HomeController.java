@@ -75,7 +75,7 @@ public class HomeController {
 
         Map<String, Object> memoryInfo = new HashMap<>();
 
-        // JVM 内存信息
+        // JVM 堆内存信息
         long maxMemory = runtime.maxMemory();
         long totalMemory = runtime.totalMemory();
         long freeMemory = runtime.freeMemory();
@@ -88,19 +88,42 @@ public class HomeController {
 
         // 内存使用百分比
         double usagePercent = (usedMemory * 100.0) / maxMemory;
-        memoryInfo.put("usagePercent", String.format("%.2f%%", usagePercent));
+        memoryInfo.put("heapUsagePercent", String.format("%.2f%%", usagePercent));
 
         // 系统内存信息
         memoryInfo.put("availableProcessors", runtime.availableProcessors());
 
-        // 内存使用警告
-        if (usagePercent > 80) {
-            memoryInfo.put("warning", "内存使用率过高！建议升级服务或优化配置");
-        } else if (usagePercent > 60) {
-            memoryInfo.put("warning", "内存使用率较高，请注意监控");
-        } else {
-            memoryInfo.put("warning", "内存使用正常");
+        // 元空间信息 (通过 JVM MXBean 获取)
+        try {
+            java.lang.management.MemoryMXBean memoryMxBean = java.lang.management.ManagementFactory.getMemoryMXBean();
+            java.lang.management.MemoryUsage metaspaceUsage = memoryMxBean.getHeapMemoryUsage(); // 注意：这会返回堆内存，我们需要非堆内存
+
+            // 获取非堆内存（包含元空间）
+            java.lang.management.MemoryUsage nonHeapMemoryUsage = memoryMxBean.getNonHeapMemoryUsage();
+
+            memoryInfo.put("metaspaceCommitted", (nonHeapMemoryUsage.getCommitted() / 1024 / 1024) + " MB");
+            memoryInfo.put("metaspaceUsed", (nonHeapMemoryUsage.getUsed() / 1024 / 1024) + " MB");
+            memoryInfo.put("metaspaceMax", (nonHeapMemoryUsage.getMax() / 1024 / 1024) + " MB");
+
+            // 计算元空间使用百分比
+            if (nonHeapMemoryUsage.getMax() > 0) {
+                double metaspacePercent = (nonHeapMemoryUsage.getUsed() * 100.0) / nonHeapMemoryUsage.getMax();
+                memoryInfo.put("metaspaceUsagePercent", String.format("%.2f%%", metaspacePercent));
+            }
+        } catch (Exception e) {
+            memoryInfo.put("metaspaceError", "无法获取元空间信息");
         }
+
+        // 内存使用警告
+        String warning;
+        if (usagePercent > 80) {
+            warning = "⚠️ 堆内存使用率过高！";
+        } else if (usagePercent > 60) {
+            warning = "⚠️ 堆内存使用率较高";
+        } else {
+            warning = "✅ 堆内存使用正常";
+        }
+        memoryInfo.put("heapWarning", warning);
 
         return new ApiResponse<>(true, "内存信息", memoryInfo);
     }

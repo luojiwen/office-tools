@@ -69,15 +69,18 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
 
 # 设置生产环境 JVM 参数
 # 针对 Render 免费版 512MB 内存限制优化
-# -Xmx300m: 最大堆内存 300MB（留出空间给元空间、JVM 自身、操作系统）
-# -Xms128m: 初始堆内存 128MB（动态增长，节省内存）
-# -XX:MaxMetaspaceSize=64m: 限制元空间大小
+# -Xmx240m: 最大堆内存 240MB（减少堆内存，给元空间更多空间）
+# -Xms100m: 初始堆内存 100MB（动态增长，节省内存）
+# -XX:MaxMetaspaceSize=128m: 增加元空间到 128MB（Aspose.Words 需要大量类加载）
+# -XX:CompressedClassSpaceSize=64m: 压缩类空间大小
 # -XX:+UseG1GC: 使用 G1 垃圾收集器（低延迟）
 # -XX:+UseStringDeduplication: 字符串去重，减少内存占用
 # -XX:MaxGCPauseMillis=200: 设置最大 GC 暂停时间
 # -XX:InitiatingHeapOccupancyPercent=35: 提前触发 GC，避免内存峰值
 # -Djava.awt.headless=true: 无头模式（服务器无 GUI）
-ENV JAVA_OPTS="-Xmx300m -Xms128m -XX:MaxMetaspaceSize=64m \
+#
+# 内存预估: 240MB(堆) + 128MB(元空间) + 64MB(压缩类空间) + 50MB(JVM/OS) = 482MB < 512MB ✅
+ENV JAVA_OPTS="-Xmx240m -Xms100m -XX:MaxMetaspaceSize=128m -XX:CompressedClassSpaceSize=64m \
     -XX:+UseG1GC -XX:+UseStringDeduplication \
     -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=35 \
     -Djava.awt.headless=true \
